@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center"
+    android:background="#f5f5f5">
+
+    <!-- Status Display -->
+    <TextView
+        android:id="@+id/textViewStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Ready"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:padding="16dp"
+        android:background="#ffffff"
+        android:elevation="4dp" />
+
+    <!-- Countdown Timer -->
+    <TextView
+        android:id="@+id/textViewCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="16sp"
+        android:textColor="#FF0000"
+        android:textStyle="bold"
+        android:layout_marginBottom="40dp" />
+
+    <!-- Stop Tracking Button -->
+    <Button
+        android:id="@+id/buttonStopTracking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop Tracking"
+        android:backgroundTint="#F44336"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:textSize="16sp" />
+
+</LinearLayout>
