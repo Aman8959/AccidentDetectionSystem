@@ -35,7 +35,7 @@ The app requires the following permissions to function correctly:
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone <(https://github.com/Aman8959/AccidentDetectionSystem.git)>
     ```
 2.  **Open in Android Studio:**
     Open the cloned project in Android Studio.
