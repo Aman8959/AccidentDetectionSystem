@@ -1,11 +1,16 @@
 package com.youraccident.detection.services;
 
+import android.Manifest;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.IBinder;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
+import androidx.core.app.ActivityCompat;
+
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -23,13 +28,26 @@ public class LocationService extends Service {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission not granted → Stop service safely
+            return START_NOT_STICKY;
+        }
+
         startLocationUpdates();
         Toast.makeText(this, "Location service started", Toast.LENGTH_SHORT).show();
         return START_STICKY;
     }
 
+
+    @RequiresPermission(allOf = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION})
     private void startLocationUpdates() {
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000); // 10 seconds

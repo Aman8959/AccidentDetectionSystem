@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="buttonLogout" type="id" />
+    <item name="editTextEmergencyContact" type="id" />
+</resources>

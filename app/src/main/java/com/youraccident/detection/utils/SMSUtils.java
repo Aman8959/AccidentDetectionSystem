@@ -1,108 +1,58 @@
 package com.youraccident.detection.utils;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.telephony.SmsManager;
-import android.widget.Toast;
-import androidx.core.content.ContextCompat;
-import com.youraccident.detection.models.User;
+import android.util.Log;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.youraccident.detection.models.EmergencyContact;
+import java.lang.reflect.Type;
+import java.util.List;
 
 public class SMSUtils {
 
-    public static boolean sendEmergencySMS(Context context, String message) {
-        // Check SMS permission first
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(context, "SMS permission denied", Toast.LENGTH_SHORT).show();
-            return false;
+    private static final String TAG = "SMSUtils";
+
+    public static void sendSMS(Context context, String phoneNumber, String message) {
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            Log.e(TAG, "Invalid phone number provided.");
+            return;
         }
-
-        try {
-            SmsManager smsManager = SmsManager.getDefault();
-            boolean smsSent = false;
-
-            // Get emergency contacts from SharedPrefManager
-            SharedPrefManager prefManager = SharedPrefManager.getInstance(context);
-            String[] emergencyContacts = prefManager.getEmergencyContacts();
-
-            // Send to emergency contacts from SharedPreferences
-            for (String contact : emergencyContacts) {
-                if (contact != null && !contact.trim().isEmpty()) {
-                    smsManager.sendTextMessage(contact.trim(), null, message, null, null);
-                    smsSent = true;
-                    System.out.println("SMS sent to: " + contact);
-                }
-            }
-
-            // If no emergency contacts found in SharedPreferences, try User object
-            if (!smsSent) {
-                User user = prefManager.getUser();
-                if (user != null) {
-                    // Use the emergency contact methods from User class
-                    String contact1 = user.getEmergencyContact1();
-                    String contact2 = user.getEmergencyContact2();
-
-                    if (contact1 != null && !contact1.isEmpty()) {
-                        smsManager.sendTextMessage(contact1, null, message, null, null);
-                        smsSent = true;
-                        System.out.println("SMS sent to emergency contact 1: " + contact1);
-                    }
-
-                    if (contact2 != null && !contact2.isEmpty()) {
-                        smsManager.sendTextMessage(contact2, null, message, null, null);
-                        smsSent = true;
-                        System.out.println("SMS sent to emergency contact 2: " + contact2);
-                    }
-                }
-            }
-
-            // If still no contacts, send to default numbers (for demo)
-            if (!smsSent) {
-                String[] defaultContacts = {"+911234567890", "+919876543210"}; // Demo numbers
-                for (String contact : defaultContacts) {
-                    try {
-                        smsManager.sendTextMessage(contact, null, message, null, null);
-                        smsSent = true;
-                        System.out.println("SMS sent to default contact: " + contact);
-                    } catch (Exception e) {
-                        System.out.println("Failed to send to default contact: " + contact);
-                    }
-                }
-            }
-
-            if (smsSent) {
-                Toast.makeText(context, "Emergency SMS sent to contacts", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(context, "No emergency contacts found", Toast.LENGTH_LONG).show();
-            }
-
-            return smsSent;
-
-        } catch (Exception e) {
-            Toast.makeText(context, "Failed to send SMS: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // Additional method to send SMS to specific number
-    public static boolean sendSMSToContact(Context context, String phoneNumber, String message) {
-        // Check SMS permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(context, "SMS permission denied", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
         try {
             SmsManager smsManager = SmsManager.getDefault();
             smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-            Toast.makeText(context, "SMS sent successfully", Toast.LENGTH_SHORT).show();
-            return true;
+            Log.d(TAG, "SMS sent successfully to: " + phoneNumber);
         } catch (Exception e) {
-            Toast.makeText(context, "Failed to send SMS: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+            Log.e(TAG, "Failed to send SMS to: " + phoneNumber, e);
+        }
+    }
+
+    public static boolean sendEmergencySMS(Context context, String message) {
+        try {
+            SharedPrefManager prefManager = new SharedPrefManager(context);
+            String contactsJson = prefManager.getEmergencyContacts();
+            if (contactsJson.isEmpty()) {
+                Log.d(TAG, "No emergency contacts found in SharedPreferences.");
+                return false;
+            }
+
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<EmergencyContact>>() {}.getType();
+            List<EmergencyContact> contacts = gson.fromJson(contactsJson, type);
+
+            if (contacts == null || contacts.isEmpty()) {
+                Log.d(TAG, "No emergency contacts found after parsing JSON.");
+                return false;
+            }
+
+            for (EmergencyContact contact : contacts) {
+                sendSMS(context, contact.getPhoneNumber(), message);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "An error occurred while sending emergency SMS", e);
             return false;
         }
     }

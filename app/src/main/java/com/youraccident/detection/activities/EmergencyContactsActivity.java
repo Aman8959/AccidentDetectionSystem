@@ -1,70 +1,100 @@
 package com.youraccident.detection.activities;
 
 import android.os.Bundle;
-import android.widget.Button;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.youraccident.detection.R;
-import com.youraccident.detection.models.User;
+import com.youraccident.detection.adapters.EmergencyContactsAdapter;
+import com.youraccident.detection.models.EmergencyContact;
 import com.youraccident.detection.utils.SharedPrefManager;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
-public class EmergencyContactsActivity extends AppCompatActivity {
+public class EmergencyContactsActivity extends AppCompatActivity implements EmergencyContactsAdapter.OnDeleteButtonClickListener {
 
-    private EditText editTextContact1, editTextContact2;
-    private Button buttonSaveContacts;
+    private ListView listViewContacts;
+    private List<EmergencyContact> contacts;
+    private EmergencyContactsAdapter adapter;
+    private SharedPrefManager sharedPrefManager;
+    private Gson gson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_emergency_contacts);
 
-        initViews();
-        loadExistingContacts();
-        setClickListeners();
+        sharedPrefManager = new SharedPrefManager(this);
+        gson = new Gson();
+        listViewContacts = findViewById(R.id.listViewContacts);
+
+        loadContacts();
+
+        adapter = new EmergencyContactsAdapter(this, contacts, this);
+        listViewContacts.setAdapter(adapter);
+
+        findViewById(R.id.buttonAddContact).setOnClickListener(v -> showAddContactDialog());
     }
 
-    private void initViews() {
-        editTextContact1 = findViewById(R.id.editTextContact1);
-        editTextContact2 = findViewById(R.id.editTextContact2);
-        buttonSaveContacts = findViewById(R.id.buttonSaveContacts);
-    }
-
-    private void loadExistingContacts() {
-        User user = SharedPrefManager.getInstance(this).getUser();
-        if (user != null) {
-            if (user.getEmergencyContact1() != null) {
-                editTextContact1.setText(user.getEmergencyContact1());
-            }
-            if (user.getEmergencyContact2() != null) {
-                editTextContact2.setText(user.getEmergencyContact2());
-            }
-        }
-    }
-
-    private void setClickListeners() {
-        buttonSaveContacts.setOnClickListener(v -> saveEmergencyContacts());
-    }
-
-    private void saveEmergencyContacts() {
-        String contact1 = editTextContact1.getText().toString().trim();
-        String contact2 = editTextContact2.getText().toString().trim();
-
-        if (contact1.isEmpty() && contact2.isEmpty()) {
-            Toast.makeText(this, "Please add at least one emergency contact", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        User user = SharedPrefManager.getInstance(this).getUser();
-        if (user != null) {
-            user.setEmergencyContact1(contact1);
-            user.setEmergencyContact2(contact2);
-            SharedPrefManager.getInstance(this).saveUser(user);
-
-            Toast.makeText(this, "Emergency contacts saved!", Toast.LENGTH_SHORT).show();
-            finish();
+    private void loadContacts() {
+        String contactsJson = sharedPrefManager.getEmergencyContacts();
+        if (contactsJson.isEmpty()) {
+            contacts = new ArrayList<>();
         } else {
-            Toast.makeText(this, "User not found. Please login again.", Toast.LENGTH_SHORT).show();
+            Type type = new TypeToken<List<EmergencyContact>>() {}.getType();
+            contacts = gson.fromJson(contactsJson, type);
         }
+    }
+
+    private void saveContacts() {
+        String contactsJson = gson.toJson(contacts);
+        sharedPrefManager.saveEmergencyContacts(contactsJson);
+    }
+
+    private void showAddContactDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_add_contact, null);
+        builder.setView(dialogView);
+
+        EditText editTextName = dialogView.findViewById(R.id.editTextName);
+        EditText editTextNumber = dialogView.findViewById(R.id.editTextNumber);
+        CheckBox checkBoxShouldCall = dialogView.findViewById(R.id.checkboxShouldCall);
+
+        builder.setTitle("Add Emergency Contact")
+                .setPositiveButton("Add", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String name = editTextName.getText().toString().trim();
+                        String number = editTextNumber.getText().toString().trim();
+                        boolean shouldCall = checkBoxShouldCall.isChecked();
+                        if (!name.isEmpty() && !number.isEmpty()) {
+                            contacts.add(new EmergencyContact(name, number, shouldCall));
+                            adapter.notifyDataSetChanged();
+                            saveContacts();
+                        } else {
+                            Toast.makeText(EmergencyContactsActivity.this, "Please enter both name and number", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null);
+
+        builder.create().show();
+    }
+
+    @Override
+    public void onDeleteClick(int position) {
+        contacts.remove(position);
+        adapter.notifyDataSetChanged();
+        saveContacts();
     }
 }

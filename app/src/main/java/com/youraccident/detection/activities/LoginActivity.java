@@ -1,5 +1,7 @@
 package com.youraccident.detection.activities;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
@@ -13,28 +15,39 @@ import com.youraccident.detection.utils.SharedPrefManager;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText editTextUsername, editTextPassword;
+    private EditText editTextEmail, editTextPassword;
     private Button buttonLogin;
     private TextView textViewRegister;
+    private SharedPrefManager sharedPrefManager;
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+
+        // Initialize SharedPrefManager first
+        sharedPrefManager = new SharedPrefManager(this);
 
         // Check if user is already logged in
-        if (SharedPrefManager.getInstance(this).isLoggedIn()) {
+        if (sharedPrefManager.isLoggedIn()) {
             startActivity(new Intent(this, DashboardActivity.class));
             finish();
-            return; // Add return to prevent further execution
+            return; // Stop further execution
         }
+
+        setContentView(R.layout.activity_login);
 
         initViews();
         setClickListeners();
+        
+        // Initialize Firebase Auth and Firestore
+        auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
     }
 
     private void initViews() {
-        editTextUsername = findViewById(R.id.editTextUsername);
+        editTextEmail = findViewById(R.id.editTextEmail); // Ensure ID matches layout
         editTextPassword = findViewById(R.id.editTextPassword);
         buttonLogin = findViewById(R.id.buttonLogin);
         textViewRegister = findViewById(R.id.textViewRegister);
@@ -49,24 +62,44 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
-        String username = editTextUsername.getText().toString().trim();
+        String email = editTextEmail.getText().toString().trim();
         String password = editTextPassword.getText().toString().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
+        if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // For demo - In real app, verify with server
-        if (username.equals("demo") && password.equals("demo123")) {
-            User user = new User("1", username, "demo@example.com", "1234567890");
-            SharedPrefManager.getInstance(this).saveUser(user);
+        // Firebase Login
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // Fetch user details from Firestore to get username, etc.
+                        // This part is important for a complete user profile.
+                        String uid = auth.getCurrentUser().getUid();
+                        db.collection("users").document(uid).get()
+                                .addOnSuccessListener(documentSnapshot -> {
+                                    User user = documentSnapshot.toObject(User.class);
+                                    if (user != null) {
+                                        sharedPrefManager.saveUser(user);
+                                    }
+                                    // Even if user not in DB, login should proceed
+                                    Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+                                    startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                                    finish();
+                                })
+                                .addOnFailureListener(e -> {
+                                    // Handle failure to fetch user data, but still log in
+                                    Toast.makeText(LoginActivity.this, "Login Successful! (Could not fetch profile)", Toast.LENGTH_SHORT).show();
+                                    startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                                    finish();
+                                });
 
-            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(this, DashboardActivity.class));
-            finish();
-        } else {
-            Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
-        }
+                    } else {
+                        Toast.makeText(LoginActivity.this,
+                                "Invalid Credentials or User not found.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }

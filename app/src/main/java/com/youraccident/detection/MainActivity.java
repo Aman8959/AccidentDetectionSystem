@@ -13,72 +13,48 @@ import com.youraccident.detection.utils.SharedPrefManager;
 public class MainActivity extends AppCompatActivity {
 
     private Button buttonQuickLogin, buttonQuickSignup;
+    private SharedPrefManager sharedPrefManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Initialize SharedPrefManager first
+        sharedPrefManager = new SharedPrefManager(this);
+
+        // Check if user is already logged in and redirect
+        if (sharedPrefManager.isLoggedIn()) {
+            startActivity(new Intent(this, DashboardActivity.class));
+            finish();
+            return; // Important to prevent rest of the code from executing
+        }
+
         setContentView(R.layout.activity_main);
 
-
-
-        // Check if user is already logged in
-        checkLoginStatus();
+        // Initialize views after setting content view
+        initViews();
 
         // Set click listeners
         setClickListeners();
     }
 
-
-
-    private void checkLoginStatus() {
-        if (SharedPrefManager.getInstance(this).isLoggedIn()) {
-            startActivity(new Intent(this, DashboardActivity.class));
-            finish();
-        }
+    private void initViews() {
+        buttonQuickLogin = findViewById(R.id.buttonQuickLogin);
+        buttonQuickSignup = findViewById(R.id.buttonQuickSignup);
     }
 
     private void setClickListeners() {
         // Login button click
-        buttonQuickLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            }
+        buttonQuickLogin.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
         });
 
         // Signup button click
-        buttonQuickSignup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, SignUpActivity.class));
-            }
+        buttonQuickSignup.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, SignUpActivity.class));
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Update UI based on login status
-        updateUI();
-    }
-
-    private void updateUI() {
-        if (SharedPrefManager.getInstance(this).isLoggedIn()) {
-            // User is logged in - hide buttons
-            if (buttonQuickLogin != null) {
-                buttonQuickLogin.setVisibility(View.GONE);
-            }
-            if (buttonQuickSignup != null) {
-                buttonQuickSignup.setVisibility(View.GONE);
-            }
-        } else {
-            // User is not logged in - show buttons
-            if (buttonQuickLogin != null) {
-                buttonQuickLogin.setVisibility(View.VISIBLE);
-            }
-            if (buttonQuickSignup != null) {
-                buttonQuickSignup.setVisibility(View.VISIBLE);
-            }
-        }
-    }
+    // No need for onResume and updateUI as we are redirecting at the start
+    // if the user is already logged in.
 }

@@ -3,21 +3,27 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.youraccident.detection">
 
-    <!-- Permissions -->
+    <!-- CRITICAL PERMISSIONS FOR THE APP -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
+    <!-- Required for battery optimization -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Required for SOS screen to wake up the phone -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <!-- Hardware features -->
-    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <!-- HARDWARE FEATURES -->
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
-    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -26,7 +32,7 @@
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
         tools:targetApi="31">
 
-        <!-- Main Login Activity -->
+        <!-- LAUNCHER ACTIVITY -->
         <activity
             android:name=".activities.LoginActivity"
             android:exported="true">
@@ -36,39 +42,37 @@
             </intent-filter>
         </activity>
 
-        <!-- SignUp Activity -->
+        <!-- OTHER ACTIVITIES -->
+        <activity android:name=".activities.SignUpActivity" />
+        <activity android:name=".activities.DashboardActivity" />
+        <activity android:name=".activities.EmergencyContactsActivity" />
+        <activity android:name=".activities.EmergencyAlertActivity" />
+
+        <!-- SOS Activity: Needs special flags to show over lock screen -->
         <activity
-            android:name=".activities.SignUpActivity"
-            android:exported="false" />
+            android:name=".activities.SOSActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true" />
 
-        <!-- Dashboard Activity -->
-        <activity
-            android:name=".activities.DashboardActivity"
-            android:exported="false" />
-
-        <!-- Tracking Activity -->
-        <activity
-            android:name=".activities.TrackingActivity"
-            android:exported="false" />
-
-        <!-- Emergency Contacts Activity -->
-        <activity
-            android:name=".activities.EmergencyContactsActivity"
-            android:exported="false" />
-
-        <!-- Services - Comment out if not created yet -->
-
+        <!-- CORE SERVICE -->
         <service
-            android:name=".services.SensorService"
+            android:name=".services.AccidentService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
-        <service
-            android:name=".services.LocationService"
+        <!-- BROADCAST RECEIVER for Activity Recognition -->
+        <receiver
+            android:name=".utils.ActivityRecognitionReceiver"
             android:enabled="true"
-            android:exported="false" />
-
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.ACTIVITY_RECOGNITION">
+            <intent-filter>
+                <action android:name="com.youraccident.detection.TRANSITION_ACTION" />
+            </intent-filter>
+        </receiver>
 
     </application>
-
 </manifest>

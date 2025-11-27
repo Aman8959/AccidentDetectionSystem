@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#D32F2F" 
+    android:padding="24dp"
+    tools:context=".activities.SOSActivity">
+
+    <TextView
+        android:id="@+id/textViewSosTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:text="CRASH DETECTED"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textViewSosSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textViewSosTitle"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="Sending alert in..."
+        android:textColor="#FFFFFF"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/textViewCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="15"
+        android:textColor="#FFFFFF"
+        android:textSize="150sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/buttonCancelSos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:backgroundTint="#FFFFFF"
+        android:padding="16dp"
+        android:text="CANCEL ALERT"
+        android:textColor="#D32F2F"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+</RelativeLayout>

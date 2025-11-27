@@ -1,5 +1,6 @@
 package com.youraccident.detection.activities;
 
+import com.google.firebase.auth.FirebaseAuth;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
@@ -7,15 +8,22 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.gson.Gson;
 import com.youraccident.detection.R;
+import com.youraccident.detection.models.EmergencyContact;
 import com.youraccident.detection.models.User;
 import com.youraccident.detection.utils.SharedPrefManager;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class SignUpActivity extends AppCompatActivity {
 
-    private EditText editTextUsername, editTextEmail, editTextPhone, editTextPassword, editTextConfirmPassword;
+    private EditText editTextUsername, editTextEmail, editTextPhone, editTextPassword, editTextConfirmPassword, editTextEmergencyContact;
     private Button buttonSignUp;
     private TextView textViewLogin;
+
+    FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +32,8 @@ public class SignUpActivity extends AppCompatActivity {
 
         initViews();
         setClickListeners();
+        auth = FirebaseAuth.getInstance();
+
     }
 
     private void initViews() {
@@ -32,6 +42,7 @@ public class SignUpActivity extends AppCompatActivity {
         editTextPhone = findViewById(R.id.editTextPhone);
         editTextPassword = findViewById(R.id.editTextPassword);
         editTextConfirmPassword = findViewById(R.id.editTextConfirmPassword);
+        editTextEmergencyContact = findViewById(R.id.editTextEmergencyContact);
         buttonSignUp = findViewById(R.id.buttonSignUp);
         textViewLogin = findViewById(R.id.textViewLogin);
     }
@@ -51,9 +62,10 @@ public class SignUpActivity extends AppCompatActivity {
         String phone = editTextPhone.getText().toString().trim();
         String password = editTextPassword.getText().toString().trim();
         String confirmPassword = editTextConfirmPassword.getText().toString().trim();
+        String emergencyContact = editTextEmergencyContact.getText().toString().trim();
 
         // Validation
-        if (username.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
+        if (username.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || emergencyContact.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -63,24 +75,50 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
-        if (phone.length() < 10) {
-            Toast.makeText(this, "Please enter valid phone number", Toast.LENGTH_SHORT).show();
+        if (phone.length() < 10 || emergencyContact.length() < 10) {
+            Toast.makeText(this, "Please enter valid phone numbers", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // For demo - In real app, register with server
-        User user = new User(
-                String.valueOf(System.currentTimeMillis()), // Generate unique ID
-                username,
-                email,
-                phone
-        );
 
-        // Save user data
-        SharedPrefManager.getInstance(this).saveUser(user);
+        auth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
 
-        Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(this, DashboardActivity.class));
-        finish();
+                        String uid = auth.getCurrentUser().getUid();
+
+                        User user = new User(
+                                uid,
+                                username,
+                                email,
+                                phone
+                        );
+
+
+                        SharedPrefManager sharedPrefManager = new SharedPrefManager(this);
+                        sharedPrefManager.saveUser(user);
+
+                        List<EmergencyContact> contacts = new ArrayList<>();
+
+                        contacts.add(new EmergencyContact("Primary Contact", emergencyContact, false));
+
+                        String contactsJson = new Gson().toJson(contacts);
+
+                        sharedPrefManager.saveEmergencyContacts(contactsJson);
+
+                        Toast.makeText(SignUpActivity.this, "Signup Successful!", Toast.LENGTH_SHORT).show();
+
+
+                        Intent intent = new Intent(SignUpActivity.this, DashboardActivity.class); 
+                        startActivity(intent);
+                        finish();
+
+                    } else {
+                        Toast.makeText(SignUpActivity.this,
+                                task.getException().getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
+
 }

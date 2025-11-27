@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "582925521096",
-    "project_id": "accidentdetectionsystem-c6f9c",
-    "storage_bucket": "accidentdetectionsystem-c6f9c.firebasestorage.app"
+    "project_number": "888613896654",
+    "project_id": "autoguard-b8bf0",
+    "storage_bucket": "autoguard-b8bf0.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:582925521096:android:23eee5a9c5beb5e7d015fd",
+        "mobilesdk_app_id": "1:888613896654:android:1f5ef628d943f07244eb9f",
         "android_client_info": {
           "package_name": "com.youraccident.detection"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCpboMpUWj6LSxiVpUJQgFhaEJ4CgLIPgk"
+          "current_key": "AIzaSyA-COrpzRGucLL58YvpXnW8svKJSaf0Tbg"
         }
       ],
       "services": {
