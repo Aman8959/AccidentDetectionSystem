@@ -1,32 +1,31 @@
 package com.youraccident.detection.activities;
 
 import android.os.Bundle;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.CheckBox;
+import android.text.InputType;
 import android.widget.EditText;
-import android.widget.ListView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youraccident.detection.R;
-import com.youraccident.detection.adapters.EmergencyContactsAdapter;
+import com.youraccident.detection.adapters.ContactAdapter;
 import com.youraccident.detection.models.EmergencyContact;
 import com.youraccident.detection.utils.SharedPrefManager;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmergencyContactsActivity extends AppCompatActivity implements EmergencyContactsAdapter.OnDeleteButtonClickListener {
+public class EmergencyContactsActivity extends AppCompatActivity {
 
-    private ListView listViewContacts;
-    private List<EmergencyContact> contacts;
-    private EmergencyContactsAdapter adapter;
+    private RecyclerView recyclerViewContacts;
+    private ContactAdapter contactAdapter;
+    private List<EmergencyContact> contactList;
     private SharedPrefManager sharedPrefManager;
-    private Gson gson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,67 +33,71 @@ public class EmergencyContactsActivity extends AppCompatActivity implements Emer
         setContentView(R.layout.activity_emergency_contacts);
 
         sharedPrefManager = new SharedPrefManager(this);
-        gson = new Gson();
-        listViewContacts = findViewById(R.id.listViewContacts);
+        recyclerViewContacts = findViewById(R.id.recyclerViewContacts);
+        FloatingActionButton fabAddContact = findViewById(R.id.buttonAddContact);
 
         loadContacts();
 
-        adapter = new EmergencyContactsAdapter(this, contacts, this);
-        listViewContacts.setAdapter(adapter);
+        contactAdapter = new ContactAdapter(this, contactList, this::saveContacts);
+        recyclerViewContacts.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewContacts.setAdapter(contactAdapter);
 
-        findViewById(R.id.buttonAddContact).setOnClickListener(v -> showAddContactDialog());
+        fabAddContact.setOnClickListener(view -> {
+            showAddContactDialog();
+        });
     }
 
     private void loadContacts() {
         String contactsJson = sharedPrefManager.getEmergencyContacts();
-        if (contactsJson.isEmpty()) {
-            contacts = new ArrayList<>();
-        } else {
+        if (contactsJson != null && !contactsJson.isEmpty()) {
+            Gson gson = new Gson();
             Type type = new TypeToken<List<EmergencyContact>>() {}.getType();
-            contacts = gson.fromJson(contactsJson, type);
+            contactList = gson.fromJson(contactsJson, type);
+        } else {
+            contactList = new ArrayList<>();
         }
     }
 
     private void saveContacts() {
-        String contactsJson = gson.toJson(contacts);
+        Gson gson = new Gson();
+        String contactsJson = gson.toJson(contactList);
         sharedPrefManager.saveEmergencyContacts(contactsJson);
     }
 
     private void showAddContactDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_add_contact, null);
-        builder.setView(dialogView);
+        builder.setTitle("Add New Contact");
 
-        EditText editTextName = dialogView.findViewById(R.id.editTextName);
-        EditText editTextNumber = dialogView.findViewById(R.id.editTextNumber);
-        CheckBox checkBoxShouldCall = dialogView.findViewById(R.id.checkboxShouldCall);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 50, 50, 50);
 
-        builder.setTitle("Add Emergency Contact")
-                .setPositiveButton("Add", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String name = editTextName.getText().toString().trim();
-                        String number = editTextNumber.getText().toString().trim();
-                        boolean shouldCall = checkBoxShouldCall.isChecked();
-                        if (!name.isEmpty() && !number.isEmpty()) {
-                            contacts.add(new EmergencyContact(name, number, shouldCall));
-                            adapter.notifyDataSetChanged();
-                            saveContacts();
-                        } else {
-                            Toast.makeText(EmergencyContactsActivity.this, "Please enter both name and number", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", null);
+        final EditText inputName = new EditText(this);
+        inputName.setHint("Contact Name");
+        layout.addView(inputName);
 
-        builder.create().show();
-    }
+        final EditText inputPhone = new EditText(this);
+        inputPhone.setHint("Phone Number");
+        inputPhone.setInputType(InputType.TYPE_CLASS_PHONE);
+        layout.addView(inputPhone);
 
-    @Override
-    public void onDeleteClick(int position) {
-        contacts.remove(position);
-        adapter.notifyDataSetChanged();
-        saveContacts();
+        builder.setView(layout);
+
+        builder.setPositiveButton("Add", (dialog, which) -> {
+            String name = inputName.getText().toString().trim();
+            String phone = inputPhone.getText().toString().trim();
+
+            if (name.isEmpty() || phone.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            contactList.add(new EmergencyContact(name, phone, false));
+            contactAdapter.notifyDataSetChanged();
+            saveContacts();
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 }

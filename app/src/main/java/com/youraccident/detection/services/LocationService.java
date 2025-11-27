@@ -72,8 +72,7 @@ public class LocationService extends Service {
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
     }
 
-    private void updateLocation(Location location) {
-        // Save location to SharedPreferences or send to activity
+    private void updateLocation(Location location) {       // Save location to SharedPreferences or send to activity
         // For now, just log it
         System.out.println("Location updated: " + location.getLatitude() + ", " + location.getLongitude());
     }

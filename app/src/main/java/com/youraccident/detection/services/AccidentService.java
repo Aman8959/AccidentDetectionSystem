@@ -45,6 +45,7 @@ public class AccidentService extends Service implements SensorEventListener {
     private static final String SOS_NOTIFICATION_CHANNEL_ID = "SOSChannel";
 
     private SensorManager sensorManager;
+    private ActivityRecognitionClient activityRecognitionClient;
 
     // Using original logic with very low threshold for final test
     private static final float PEAK_G_FORCE_THRESHOLD = 1.8f; 
@@ -59,6 +60,7 @@ public class AccidentService extends Service implements SensorEventListener {
         super.onCreate();
         Log.d(TAG, "Service onCreate: Initializing...");
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        activityRecognitionClient = ActivityRecognition.getClient(this);
         startForegroundService();
         startSensorListening();
     }
