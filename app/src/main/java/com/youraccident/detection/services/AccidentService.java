@@ -42,74 +42,50 @@ public class AccidentService extends Service implements SensorEventListener {
     public static final String ACTION_START_LISTENING = "com.youraccident.detection.START_LISTENING";
     public static final String ACTION_STOP_LISTENING = "com.youraccident.detection.STOP_LISTENING";
     private static final String NOTIFICATION_CHANNEL_ID = "AccidentDetectionChannel";
+    private static final String SOS_NOTIFICATION_CHANNEL_ID = "SOSChannel";
 
     private SensorManager sensorManager;
-    private ActivityRecognitionClient activityRecognitionClient;
-    private PendingIntent activityTransitionPendingIntent;
 
-    // TESTING: Lowered thresholds for easier testing.
-    private static final int SENSOR_SAMPLING_RATE = SensorManager.SENSOR_DELAY_GAME;
-    private static final double IMPACT_ENERGY_THRESHOLD = 40; // Original: 350
-    private static final float PEAK_G_FORCE_THRESHOLD = 3.0f; // Original: 8.0f
+    // Using original logic with very low threshold for final test
+    private static final float PEAK_G_FORCE_THRESHOLD = 1.8f; 
     private static final float LOW_PASS_ALPHA = 0.8f;
     private float[] gravity = new float[3];
-    private static final int DATA_BUFFER_SIZE = 25;
-    private final List<Double> accelerationBuffer = new ArrayList<>();
 
     private long lastCrashTriggerTime = 0;
-    private static final long CRASH_COOLDOWN_PERIOD = 20000; // 20 seconds
+    private static final long CRASH_COOLDOWN_PERIOD = 5000; // 5 seconds
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Service onCreate: Initializing...");
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        activityRecognitionClient = ActivityRecognition.getClient(this);
-
         startForegroundService();
-        // TESTING: Bypass activity recognition for easier testing.
         startSensorListening();
-        // setupActivityTransitions(); // Original logic
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Original logic for starting/stopping via activity recognition is bypassed in onCreate for now.
+        if (intent != null && intent.getAction() != null) {
+            if (intent.getAction().equals(ACTION_START_LISTENING)) {
+                startSensorListening();
+            } else if (intent.getAction().equals(ACTION_STOP_LISTENING)) {
+                stopSensorListening();
+            }
+        }
         return START_STICKY;
     }
 
-    private void setupActivityTransitions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "CRITICAL ERROR: ACTIVITY_RECOGNITION permission not granted. Service cannot detect driving and will not function.");
-            stopSelf();
-            return;
-        }
-
-        List<ActivityTransition> transitions = new ArrayList<>();
-        transitions.add(new ActivityTransition.Builder().setActivityType(DetectedActivity.IN_VEHICLE).setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER).build());
-        transitions.add(new ActivityTransition.Builder().setActivityType(DetectedActivity.IN_VEHICLE).setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT).build());
-
-        ActivityTransitionRequest request = new ActivityTransitionRequest(transitions);
-        Intent intent = new Intent(this, ActivityRecognitionReceiver.class);
-        activityTransitionPendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
-
-        activityRecognitionClient.requestActivityTransitionUpdates(request, activityTransitionPendingIntent)
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Activity transition updates requested successfully."))
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to request activity transition updates.", e));
-    }
-
     public void startSensorListening() {
-        Log.d(TAG, "Started sensor listening (TEST MODE)." );
+        Log.d(TAG, "Started sensor listening.");
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         if (accelerometer != null) {
-            sensorManager.registerListener(this, accelerometer, SENSOR_SAMPLING_RATE);
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
     }
 
     public void stopSensorListening() {
         Log.d(TAG, "Stopped sensor listening.");
         sensorManager.unregisterListener(this);
-        accelerationBuffer.clear();
     }
 
     @Override
@@ -130,46 +106,21 @@ public class AccidentService extends Service implements SensorEventListener {
         float linear_acceleration_z = event.values[2] - gravity[2];
 
         double magnitude = Math.sqrt(Math.pow(linear_acceleration_x, 2) + Math.pow(linear_acceleration_y, 2) + Math.pow(linear_acceleration_z, 2));
-        magnitude = magnitude / SensorManager.GRAVITY_EARTH;
+        double gForce = magnitude / SensorManager.GRAVITY_EARTH;
 
-        accelerationBuffer.add(magnitude);
-        if (accelerationBuffer.size() > DATA_BUFFER_SIZE) {
-            accelerationBuffer.remove(0);
-        }
+        Log.d(TAG, "Current Linear G-Force: " + String.format("%.2f", gForce));
 
-        if (accelerationBuffer.size() == DATA_BUFFER_SIZE) {
-            detectCrashSignature(new ArrayList<>(accelerationBuffer));
-        }
-    }
-
-    private void detectCrashSignature(List<Double> buffer) {
-        double peakGForce = 0;
-        double totalEnergy = 0;
-
-        for (Double g : buffer) {
-            totalEnergy += g * g;
-            if (g > peakGForce) {
-                peakGForce = g;
-            }
-        }
-
-        if (peakGForce > PEAK_G_FORCE_THRESHOLD && totalEnergy > IMPACT_ENERGY_THRESHOLD) {
-            Log.w(TAG, "CRASH SIGNATURE DETECTED! (TEST) Peak G: " + peakGForce + ", Energy: " + totalEnergy);
-
+        if (gForce > PEAK_G_FORCE_THRESHOLD) {
             if (System.currentTimeMillis() - lastCrashTriggerTime > CRASH_COOLDOWN_PERIOD) {
+                Log.w(TAG, "LINEAR G-FORCE THRESHOLD EXCEEDED! G-Force: " + gForce);
                 lastCrashTriggerTime = System.currentTimeMillis();
-                triggerSOSProtocol(peakGForce, buffer);
+                triggerSOSProtocol(gForce, new ArrayList<>());
             }
         }
     }
 
     private void triggerSOSProtocol(double peakGForce, List<Double> buffer) {
         GPSUtils.getCurrentLocation(this, location -> {
-            if (location == null) {
-                Log.e(TAG, "Cannot trigger SOS, location is not available.");
-                // For testing, we can proceed without location
-            }
-
             Accident crashData = new Accident();
             crashData.setTimestamp(new Date());
             crashData.setImpactMagnitude(peakGForce);
@@ -178,33 +129,39 @@ public class AccidentService extends Service implements SensorEventListener {
                 crashData.setLongitude(location.getLongitude());
                 crashData.setSpeedBeforeCrash(location.getSpeed() * 3.6f);
             } else {
-                // Mock data for testing when location is null
                 crashData.setLatitude(0.0);
                 crashData.setLongitude(0.0);
                 crashData.setSpeedBeforeCrash(0.0f);
             }
 
-            double deltaV = (peakGForce * 9.8 * 0.15) * 3.6;
-            crashData.setDeltaV(deltaV);
-            crashData.setSeverity(calculateSeverity(peakGForce, deltaV));
-
-            List<Float> timeline = new ArrayList<>();
-            for (Double g : buffer) {
-                timeline.add(g.floatValue());
-            }
-            crashData.setPreCrashGForceTimeline(timeline);
-
-            Intent alertIntent = new Intent(this, SOSActivity.class);
-            alertIntent.putExtra("crash_data", crashData);
-            alertIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(alertIntent);
+            crashData.setSeverity(calculateSeverity(peakGForce, 0));
+            showSOSNotification(crashData);
         });
     }
 
+    private void showSOSNotification(Accident crashData) {
+        createSOSNotificationChannel();
+
+        Intent fullScreenIntent = new Intent(this, SOSActivity.class);
+        fullScreenIntent.putExtra("crash_data", crashData);
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, 0, fullScreenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, SOS_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("CRASH DETECTED!")
+                .setContentText("Tap to open the SOS screen.")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setFullScreenIntent(fullScreenPendingIntent, true);
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(2, builder.build());
+    }
+
     private String calculateSeverity(double peakG, double deltaV) {
-        if (peakG > 40 || deltaV > 50) return "CRITICAL";
-        if (peakG > 25 || deltaV > 35) return "HIGH";
-        if (peakG > 15 || deltaV > 20) return "MEDIUM";
+        if (peakG > 4) return "HIGH";
+        if (peakG > 2.5) return "MEDIUM";
         return "LOW";
     }
 
@@ -219,13 +176,12 @@ public class AccidentService extends Service implements SensorEventListener {
         super.onDestroy();
         Log.d(TAG, "Service onDestroy: Cleaning up.");
         stopSensorListening();
-        // ... (original cleanup logic) ...
     }
 
     private void startForegroundService() {
         createNotificationChannel();
         Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle("Accident Detection System (TEST MODE)")
+                .setContentTitle("Accident Detection System")
                 .setContentText("Monitoring for your safety in the background.")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -239,6 +195,17 @@ public class AccidentService extends Service implements SensorEventListener {
                     NOTIFICATION_CHANNEL_ID,
                     "Background Safety Service",
                     NotificationManager.IMPORTANCE_LOW);
+            getSystemService(NotificationManager.class).createNotificationChannel(channel);
+        }
+    }
+
+    private void createSOSNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    SOS_NOTIFICATION_CHANNEL_ID,
+                    "SOS Alerts",
+                    NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription("Channel for displaying crash alerts.");
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
     }

@@ -3,140 +3,157 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#F2F4F7"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#F0F4F8"
     tools:context=".activities.DashboardActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <!-- Top Header -->
-        <LinearLayout
+        <!-- Welcome Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="12dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
 
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Dashboard"
-                android:textStyle="bold"
-                android:textSize="20sp"
-                android:textColor="#000000" />
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AutoGuard"
-                android:textStyle="bold"
-                android:textSize="20sp"
-                android:textColor="#2196F3" />
-        </LinearLayout>
+                <ImageView
+                    android:id="@+id/imageViewUserIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_person_placeholder"
+                    android:layout_marginEnd="16dp"/>
 
-        <!-- User Welcome Card -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:elevation="6dp"
-            android:padding="16dp"
-            android:orientation="vertical"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            android:gravity="center"
-            android:layout_margin="6dp"
-            android:backgroundTint="#FFFFFF"
-            android:clipToPadding="false">
+                <TextView
+                    android:id="@+id/textWelcome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Welcome, Guest"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/textWelcome"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Welcome, User"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#000000" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-        </LinearLayout>
-
-        <!-- Start Tracking -->
+        <!-- Buttons -->
         <Button
             android:id="@+id/buttonTracking"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Start Accident Tracking"
-            android:padding="16dp"
-            android:textSize="16sp"
+            android:layout_height="60dp"
             android:background="@drawable/rounded_blue"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="16dp" />
+            android:text="TRACKING STATUS"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-        <!-- Emergency Contacts -->
         <Button
             android:id="@+id/buttonEmergencyContacts"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Emergency Contacts"
-            android:padding="16dp"
-            android:textSize="16sp"
+            android:layout_height="60dp"
             android:background="@drawable/rounded_green"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="16dp" />
+            android:text="EMERGENCY CONTACTS"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-        <!-- Profile / Logout Button -->
         <Button
             android:id="@+id/buttonLogout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Profile / Logout"
+            android:layout_height="60dp"
             android:background="@drawable/rounded_red"
-            android:padding="16dp"
-            android:textColor="#FFFFFF" />
+            android:text="PROFILE / LOGOUT"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-        <!-- Status Card -->
-        <LinearLayout
+        <!-- System Status Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:elevation="4dp"
-            android:padding="16dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="16dp"
-            android:layout_margin="6dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="System Status"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginBottom="10dp"
-                android:textColor="#000000" />
-
-            <TextView
-                android:id="@+id/textViewStatus"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Accident Detection: Ready"
-                android:textSize="14sp"
-                android:textColor="#333333"
-                android:layout_marginBottom="6dp" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
-                android:id="@+id/textViewUserInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="User: Loading..."
-                android:textSize="14sp"
-                android:textColor="#333333" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="System Status"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp"/>
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/textViewStatus"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="Accident Detection:"
+                        android:textSize="16sp"/>
+                    <ImageView
+                        android:id="@+id/status_dot_ready"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/status_dot_green"
+                        android:layout_marginEnd="8dp"/>
+                    <TextView
+                        android:id="@+id/textViewStatusReady"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ready" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <TextView
+                        android:id="@+id/textViewUserInfo"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="User:"
+                        android:textSize="16sp"/>
+                    <ImageView
+                        android:id="@+id/status_dot_login"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/status_dot_red"
+                        android:layout_marginEnd="8dp"/>
+                    <TextView
+                        android:id="@+id/textViewUserStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Not logged in" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 

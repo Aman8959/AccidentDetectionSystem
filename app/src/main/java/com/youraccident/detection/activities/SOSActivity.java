@@ -1,7 +1,10 @@
 package com.youraccident.detection.activities;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -13,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -145,15 +149,20 @@ public class SOSActivity extends AppCompatActivity {
             List<EmergencyContact> contacts = gson.fromJson(contactsJson, type);
 
             if (contacts != null && !contacts.isEmpty()) {
-                 String message = String.format(
-                    "CRASH DETECTED! Severity: %s. Location: http://maps.google.com/maps?q=%.6f,%.6f",
-                    crashData.getSeverity(),
-                    crashData.getLatitude(),
-                    crashData.getLongitude()
+                String message = String.format(
+                        "CRASH DETECTED! Severity: %s. Location: http://maps.google.com/maps?q=%.6f,%.6f",
+                        crashData.getSeverity(),
+                        crashData.getLatitude(),
+                        crashData.getLongitude()
                 );
                 for (EmergencyContact contact : contacts) {
                     SMSUtils.sendSMS(this, contact.getPhoneNumber(), message);
                 }
+
+                // Make a call to the primary contact
+                EmergencyContact primaryContact = contacts.get(0);
+                makePhoneCall(primaryContact.getPhoneNumber());
+
             } else {
                 Log.w(TAG, "Cannot send SMS. Contact list is empty after parsing.");
             }
@@ -169,6 +178,17 @@ public class SOSActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Emergency Alert Sent!", Toast.LENGTH_LONG).show();
         new android.os.Handler(Looper.getMainLooper()).postDelayed(this::finish, 5000);
+    }
+
+    private void makePhoneCall(String phoneNumber) {
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.setData(Uri.parse("tel:" + phoneNumber));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            startActivity(callIntent);
+        } else {
+            // TODO: Request permission
+            Log.e(TAG, "CALL_PHONE permission not granted.");
+        }
     }
 
     @Override

@@ -28,16 +28,18 @@ public class ActivityRecognitionReceiver extends BroadcastReceiver {
     }
 
     private void handleTransitionEvent(Context context, ActivityTransitionEvent event) {
-        if (event.getActivityType() == DetectedActivity.IN_VEHICLE) {
+        int activityType = event.getActivityType();
+        if (activityType == DetectedActivity.IN_VEHICLE || activityType == DetectedActivity.ON_BICYCLE) {
             Intent serviceIntent = new Intent(context, AccidentService.class);
+            String activityName = (activityType == DetectedActivity.IN_VEHICLE) ? "vehicle" : "bicycle";
 
             if (event.getTransitionType() == ActivityTransition.ACTIVITY_TRANSITION_ENTER) {
-                Log.d(TAG, "User ENTERED a vehicle. Sending command to start listening.");
+                Log.d(TAG, "User ENTERED a " + activityName + ". Sending command to start listening.");
                 serviceIntent.setAction(AccidentService.ACTION_START_LISTENING);
                 context.startService(serviceIntent);
 
             } else if (event.getTransitionType() == ActivityTransition.ACTIVITY_TRANSITION_EXIT) {
-                Log.d(TAG, "User EXITED a vehicle. Sending command to stop listening.");
+                Log.d(TAG, "User EXITED a " + activityName + ". Sending command to stop listening.");
                 serviceIntent.setAction(AccidentService.ACTION_STOP_LISTENING);
                 context.startService(serviceIntent);
             }

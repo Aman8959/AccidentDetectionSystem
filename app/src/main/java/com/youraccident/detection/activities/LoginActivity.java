@@ -74,23 +74,19 @@ public class LoginActivity extends AppCompatActivity {
         auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Fetch user details from Firestore to get username, etc.
-                        // This part is important for a complete user profile.
                         String uid = auth.getCurrentUser().getUid();
                         db.collection("users").document(uid).get()
-                                .addOnSuccessListener(documentSnapshot -> {
-                                    User user = documentSnapshot.toObject(User.class);
-                                    if (user != null) {
+                                .addOnCompleteListener(documentTask -> {
+                                    if (documentTask.isSuccessful() && documentTask.getResult() != null && documentTask.getResult().exists()) {
+                                        User user = documentTask.getResult().toObject(User.class);
                                         sharedPrefManager.saveUser(user);
+                                        Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        // Create a partial user if Firestore data is unavailable
+                                        User partialUser = new User(uid, email, email, "");
+                                        sharedPrefManager.saveUser(partialUser);
+                                        Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
                                     }
-                                    // Even if user not in DB, login should proceed
-                                    Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
-                                    startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
-                                    finish();
-                                })
-                                .addOnFailureListener(e -> {
-                                    // Handle failure to fetch user data, but still log in
-                                    Toast.makeText(LoginActivity.this, "Login Successful! (Could not fetch profile)", Toast.LENGTH_SHORT).show();
                                     startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                                     finish();
                                 });
